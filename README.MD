@@ -31,7 +31,7 @@ Enter your repo. directory and execute following command:
 
 ## primary module
 ```bash
-go get -u -v github.com/gogf/gf/v2
+go get -u -v github.com/myvfpx/gf/v2
 ```
 
 ## cli tool
