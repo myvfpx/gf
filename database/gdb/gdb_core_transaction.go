@@ -47,7 +47,8 @@ func (c *Core) Begin(ctx context.Context) (tx *TX, err error) {
 }
 
 func (c *Core) doBeginCtx(ctx context.Context) (*TX, error) {
-	master, err := c.db.Master()
+	useSchama := c.GetSchema()
+	master, err := c.db.Master(useSchama)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +172,9 @@ func (tx *TX) Ctx(ctx context.Context) *TX {
 func (tx *TX) Commit() error {
 	if tx.transactionCount > 0 {
 		tx.transactionCount--
-		_, err := tx.Exec("RELEASE SAVEPOINT " + tx.transactionKeyForNestedPoint())
-		return err
+		//_, err := tx.Exec("RELEASE SAVEPOINT " + tx.transactionKeyForNestedPoint())
+		//return err
+		return nil
 	}
 	_, err := tx.db.DoCommit(tx.ctx, DoCommitInput{
 		Tx:            tx.tx,
@@ -192,7 +194,7 @@ func (tx *TX) Commit() error {
 func (tx *TX) Rollback() error {
 	if tx.transactionCount > 0 {
 		tx.transactionCount--
-		_, err := tx.Exec("ROLLBACK TO SAVEPOINT " + tx.transactionKeyForNestedPoint())
+		_, err := tx.Exec("ROLLBACK TRAN " + tx.transactionKeyForNestedPoint())
 		return err
 	}
 	_, err := tx.db.DoCommit(tx.ctx, DoCommitInput{
@@ -214,7 +216,7 @@ func (tx *TX) IsClosed() bool {
 
 // Begin starts a nested transaction procedure.
 func (tx *TX) Begin() error {
-	_, err := tx.Exec("SAVEPOINT " + tx.transactionKeyForNestedPoint())
+	_, err := tx.Exec("SAVE TRAN " + tx.transactionKeyForNestedPoint())
 	if err != nil {
 		return err
 	}
@@ -225,14 +227,14 @@ func (tx *TX) Begin() error {
 // SavePoint performs `SAVEPOINT xxx` SQL statement that saves transaction at current point.
 // The parameter `point` specifies the point name that will be saved to server.
 func (tx *TX) SavePoint(point string) error {
-	_, err := tx.Exec("SAVEPOINT " + tx.db.GetCore().QuoteWord(point))
+	_, err := tx.Exec("SAVE TRAN " + tx.db.GetCore().QuoteWord(point))
 	return err
 }
 
 // RollbackTo performs `ROLLBACK TO SAVEPOINT xxx` SQL statement that rollbacks to specified saved transaction.
 // The parameter `point` specifies the point name that was saved previously.
 func (tx *TX) RollbackTo(point string) error {
-	_, err := tx.Exec("ROLLBACK TO SAVEPOINT " + tx.db.GetCore().QuoteWord(point))
+	_, err := tx.Exec("ROLLBACK TRAN " + tx.db.GetCore().QuoteWord(point))
 	return err
 }
 
